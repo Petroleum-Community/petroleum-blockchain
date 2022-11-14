@@ -37,6 +37,7 @@ dependencies = [
     "zstd==1.5.2.6",
     "packaging==21.3",
     "psutil==5.9.1",
+    "nest-asyncio==1.5.6",
 ]
 
 upnp_dependencies = [
