@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from decimal import Decimal
 from typing import List, Optional, Tuple, Union
 
 from chia.consensus.constants import ConsensusConstants
@@ -51,6 +52,8 @@ class LastState:
 
     def set_state(self, state: Union[timelord_protocol.NewPeakTimelord, EndOfSubSlotBundle]):
         if isinstance(state, timelord_protocol.NewPeakTimelord):
+            log.debug(f"[debug] set state NewPeak {state.reward_chain_block.height} "
+                     f"{state.difficulty} {state.difficulty_coefficient}")
             self.state_type = StateType.PEAK
             self.peak = state
             self.subslot_end = None
@@ -59,6 +62,7 @@ class LastState:
                 state.reward_chain_block,
                 state.sub_slot_iters,
                 state.difficulty,
+                Decimal(state.difficulty_coefficient),
             )
             self.deficit = state.deficit
             self.sub_epoch_summary = state.sub_epoch_summary

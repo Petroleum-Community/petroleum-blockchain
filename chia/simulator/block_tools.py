@@ -13,6 +13,7 @@ import tempfile
 import time
 from argparse import Namespace
 from dataclasses import replace
+from decimal import Decimal
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
@@ -1250,13 +1251,13 @@ class BlockTools:
                 qualities = plot_info.prover.get_qualities_for_challenge(new_challenge)
 
                 for proof_index, quality_str in enumerate(qualities):
-
                     required_iters = calculate_iterations_quality(
                         constants.DIFFICULTY_CONSTANT_FACTOR,
                         quality_str,
                         plot_info.prover.get_size(),
                         difficulty,
                         signage_point,
+                        Decimal(1)
                     )
                     if required_iters < calculate_sp_interval_iters(constants, sub_slot_iters):
                         proof_xs: bytes = plot_info.prover.get_full_proof(new_challenge, proof_index)
@@ -1284,6 +1285,7 @@ class BlockTools:
                             plot_pk,
                             plot_info.prover.get_size(),
                             proof_xs,
+                            create_puzzlehash_for_pk(farmer_public_key),
                         )
                         found_proofs.append((required_iters, proof_of_space))
         random_sample = found_proofs
@@ -1514,6 +1516,7 @@ def load_block_list(
             full_block.reward_chain_block.proof_of_space.size,
             uint64(difficulty),
             sp_hash,
+            Decimal(1),
         )
 
         blocks[full_block.header_hash] = block_to_block_record(

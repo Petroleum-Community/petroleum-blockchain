@@ -1256,7 +1256,7 @@ def validate_recent_blocks(
             deficit = get_deficit(constants, deficit, prev_block_record, overflow, len(block.finished_sub_slots))
             log.debug(f"wp, validate block {block.height}")
             if sub_slots > 2 and transaction_blocks > 11 and (tip_height - block.height < last_blocks_to_validate):
-                caluclated_required_iters, error = validate_finished_header_block(
+                caluclated_required_iters, _, error = validate_finished_header_block(
                     constants, sub_blocks, block, False, diff, ssi, ses_blocks > 2
                 )
                 if error is not None:
@@ -1321,6 +1321,7 @@ def _validate_pospace_recent_chain(
         block.reward_chain_block.proof_of_space.size,
         diff,
         cc_sp_hash,
+        0.5,
     )
     return required_iters
 
@@ -1368,6 +1369,7 @@ def __validate_pospace(
         sub_slot_data.proof_of_space.size,
         curr_diff,
         cc_sp_hash,
+        0.5,
     )
 
 

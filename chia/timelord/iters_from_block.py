@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from decimal import Decimal
 from typing import Optional, Tuple, Union
 
 from chia.consensus.pot_iterations import calculate_ip_iters, calculate_iterations_quality, calculate_sp_iters
@@ -13,6 +14,7 @@ def iters_from_block(
     reward_chain_block: Union[RewardChainBlock, RewardChainBlockUnfinished],
     sub_slot_iters: uint64,
     difficulty: uint64,
+    difficulty_coefficient: Decimal,
 ) -> Tuple[uint64, uint64]:
     if reward_chain_block.challenge_chain_sp_vdf is None:
         assert reward_chain_block.signage_point_index == 0
@@ -33,6 +35,7 @@ def iters_from_block(
         reward_chain_block.proof_of_space.size,
         difficulty,
         cc_sp,
+        difficulty_coefficient,
     )
     return (
         calculate_sp_iters(constants, sub_slot_iters, reward_chain_block.signage_point_index),

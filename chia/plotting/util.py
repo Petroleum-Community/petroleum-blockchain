@@ -34,6 +34,7 @@ class PlotInfo:
     plot_public_key: G1Element
     file_size: int
     time_modified: float
+    farmer_pk_ph: bytes32
 
 
 class PlotRefreshEvents(Enum):

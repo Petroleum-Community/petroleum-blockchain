@@ -40,6 +40,7 @@ class NewSignagePointHarvester(Streamable):
     signage_point_index: uint8
     sp_hash: bytes32
     pool_difficulties: List[PoolDifficulty]
+    stakings: List[Tuple[bytes32, str]]  #difficulty_coefficient of each farmer public key's puzzle hash
 
 
 @streamable
@@ -50,6 +51,7 @@ class NewProofOfSpace(Streamable):
     plot_identifier: str
     proof: ProofOfSpace
     signage_point_index: uint8
+    difficulty_coefficient: str
 
 
 @streamable
@@ -83,6 +85,7 @@ class Plot(Streamable):
     plot_public_key: G1Element
     file_size: uint64
     time_modified: uint64
+    farmer_pk_ph: bytes32
 
 
 @streamable

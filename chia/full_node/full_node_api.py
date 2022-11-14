@@ -5,6 +5,7 @@ import time
 import traceback
 import functools
 from datetime import datetime, timezone
+from decimal import Decimal
 from secrets import token_bytes
 from typing import Dict, List, Optional, Tuple, Set
 
@@ -872,6 +873,7 @@ class FullNodeAPI:
             if peak is None or peak.height <= self.full_node.constants.MAX_SUB_SLOT_BLOCKS:
                 difficulty = self.full_node.constants.DIFFICULTY_STARTING
                 sub_slot_iters = self.full_node.constants.SUB_SLOT_ITERS_STARTING
+                difficulty_coeff = 20.0
             else:
                 difficulty = uint64(peak.weight - self.full_node.blockchain.block_record(peak.prev_hash).weight)
                 sub_slot_iters = peak.sub_slot_iters
@@ -880,13 +882,16 @@ class FullNodeAPI:
                         difficulty = sub_slot.challenge_chain.new_difficulty
                     if sub_slot.challenge_chain.new_sub_slot_iters is not None:
                         sub_slot_iters = sub_slot.challenge_chain.new_sub_slot_iters
-
+                difficulty_coefficient = await self.full_node.blockchain.get_farmer_difficulty_coefficient(
+                    request.proof_of_space.farmer_pk_ph
+                )
             required_iters: uint64 = calculate_iterations_quality(
                 self.full_node.constants.DIFFICULTY_CONSTANT_FACTOR,
                 quality_string,
                 request.proof_of_space.size,
                 difficulty,
                 request.challenge_chain_sp,
+                difficulty_coefficient,
             )
             sp_iters: uint64 = calculate_sp_iters(self.full_node.constants, sub_slot_iters, request.signage_point_index)
             ip_iters: uint64 = calculate_ip_iters(
@@ -1619,3 +1624,23 @@ class FullNodeAPI:
         response = RespondFeeEstimates(FeeEstimateGroup(error=None, estimates=fee_estimates))
         msg = make_msg(ProtocolMessageTypes.respond_fee_estimates, response)
         return msg
+
+    @api_request
+    async def request_stakings(self, request: farmer_protocol.RequestStakings) -> Optional[Message]:
+        stakings = []
+        for puzzle_hash in request.puzzle_hashes:
+            difficulty_coefficient = await self.full_node.blockchain.get_farmer_difficulty_coefficient(
+                puzzle_hash, request.height, request.blocks
+            )
+            stakings.append((puzzle_hash, str(difficulty_coefficient)))
+        msg = make_msg(ProtocolMessageTypes.respond_stakings, farmer_protocol.FarmerStakings(stakings=stakings))
+        return msg
+
+    @peer_required
+    @api_request
+    async def request_peers_introducer(
+        self,
+        request: introducer_protocol.RequestPeersIntroducer,
+        peer: ws.WSChiaConnection,
+    ) -> Optional[Message]:
+        pass

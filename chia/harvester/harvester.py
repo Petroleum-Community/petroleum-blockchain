@@ -146,6 +146,7 @@ class Harvester:
                         "plot_public_key": plot_info.plot_public_key,
                         "file_size": plot_info.file_size,
                         "time_modified": int(plot_info.time_modified),
+                        "farmer_pk_ph": plot_info.farmer_pk_ph,
                     }
                 )
             self.log.debug(

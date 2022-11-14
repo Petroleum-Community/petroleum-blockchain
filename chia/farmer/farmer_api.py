@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import time
+from decimal import Decimal
 from typing import Any, Dict, List, Optional, Tuple
 
 import aiohttp
@@ -100,6 +101,7 @@ class FarmerAPI:
                 new_proof_of_space.proof.size,
                 sp.difficulty,
                 new_proof_of_space.sp_hash,
+                Decimal(new_proof_of_space.difficulty_coefficient),
             )
 
             # If the iters are good enough to make a block, proceed with the block making flow
@@ -156,6 +158,7 @@ class FarmerAPI:
                     new_proof_of_space.proof.size,
                     pool_state_dict["current_difficulty"],
                     new_proof_of_space.sp_hash,
+                    1,  # FIXME handle staking in pool protocol
                 )
                 if required_iters >= calculate_sp_interval_iters(
                     self.farmer.constants, self.farmer.constants.POOL_SUB_SLOT_ITERS
@@ -439,7 +442,10 @@ class FarmerAPI:
     """
 
     @api_request
-    async def new_signage_point(self, new_signage_point: farmer_protocol.NewSignagePoint):
+    @peer_required
+    async def new_signage_point(
+            self, new_signage_point: farmer_protocol.NewSignagePoint, peer: ws.WSChiaConnection
+    ):
         try:
             pool_difficulties: List[PoolDifficulty] = []
             for p2_singleton_puzzle_hash, pool_dict in self.farmer.pool_state.items():
@@ -461,6 +467,17 @@ class FarmerAPI:
                         p2_singleton_puzzle_hash,
                     )
                 )
+
+            rsp: Optional[farmer_protocol.FarmerStakings] = await peer.request_stakings(
+                farmer_protocol.RequestStakings(
+                    puzzle_hashes=self.farmer.get_public_key_puzzle_hashes(),
+                    height=None,
+                    blocks=None,
+                )
+            )
+            if rsp is None or not isinstance(rsp, farmer_protocol.FarmerStakings):
+                self.log.warning(f"Bad request staking response from peer {rsp}")
+                return
             message = harvester_protocol.NewSignagePointHarvester(
                 new_signage_point.challenge_hash,
                 new_signage_point.difficulty,
@@ -468,6 +485,7 @@ class FarmerAPI:
                 new_signage_point.signage_point_index,
                 new_signage_point.challenge_chain_sp,
                 pool_difficulties,
+                rsp.stakings,
             )
 
             msg = make_msg(ProtocolMessageTypes.new_signage_point_harvester, message)
@@ -568,3 +586,7 @@ class FarmerAPI:
     @peer_required
     async def plot_sync_done(self, message: PlotSyncDone, peer: ws.WSChiaConnection):
         await self.farmer.plot_sync_receivers[peer.peer_node_id].sync_done(message)
+
+    @api_request
+    async def respond_stakings(self, response: farmer_protocol.FarmerStakings):
+        self.farmer.log.warning("Respond staking came too late")

@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import nest_asyncio
 from pkg_resources import DistributionNotFound, get_distribution, resource_filename
+
+nest_asyncio.apply()
 
 try:
     __version__ = get_distribution("chia-blockchain").version

@@ -11,6 +11,7 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 from blspy import G1Element
 from chiapos import DiskProver
 
+from chia.consensus.coinbase import create_puzzlehash_for_pk
 from chia.consensus.pos_quality import UI_ACTUAL_SPACE_CONSTANT_FACTOR, _expected_plot_size
 from chia.plotting.cache import Cache, CacheEntry
 from chia.plotting.util import PlotInfo, PlotRefreshEvents, PlotRefreshResult, PlotsRefreshParameter, get_plot_filenames
@@ -326,6 +327,7 @@ class PlotManager:
                     cache_entry.plot_public_key,
                     stat_info.st_size,
                     stat_info.st_mtime,
+                    create_puzzlehash_for_pk(cache_entry.farmer_public_key),
                 )
 
                 cache_entry.bump_last_use()

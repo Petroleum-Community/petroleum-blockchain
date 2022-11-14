@@ -24,6 +24,7 @@ class ProofOfSpace(Streamable):
     plot_public_key: G1Element
     size: uint8
     proof: bytes
+    farmer_pk_ph: bytes32
 
     def get_plot_id(self) -> bytes32:
         assert self.pool_public_key is None or self.pool_contract_puzzle_hash is None

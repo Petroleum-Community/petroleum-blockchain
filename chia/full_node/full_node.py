@@ -588,28 +588,28 @@ class FullNode:
                 if not response:
                     raise ValueError(f"Error short batch syncing, invalid/no response for {height}-{end_height}")
                 async with self._blockchain_lock_high_priority:
-                    state_change_summary: Optional[StateChangeSummary]
-                    success, state_change_summary = await self.receive_block_batch(response.blocks, peer, None)
-                    if not success:
-                        raise ValueError(f"Error short batch syncing, failed to validate blocks {height}-{end_height}")
-                    if state_change_summary is not None:
-                        try:
-                            peak_fb: Optional[FullBlock] = await self.blockchain.get_full_peak()
-                            assert peak_fb is not None
-                            ppp_result: PeakPostProcessingResult = await self.peak_post_processing(
-                                peak_fb,
-                                state_change_summary,
-                                peer,
-                            )
-                            await self.peak_post_processing_2(peak_fb, peer, state_change_summary, ppp_result)
-                        except Exception:
-                            # Still do post processing after cancel (or exception)
-                            peak_fb = await self.blockchain.get_full_peak()
-                            assert peak_fb is not None
-                            await self.peak_post_processing(peak_fb, state_change_summary, peer)
-                            raise
-                        finally:
-                            self.log.info(f"Added blocks {height}-{end_height}")
+                    for block in response.blocks:
+                        success, state_change_summary = await self.receive_block_batch([block], peer, None)
+                        if not success:
+                            raise ValueError(f"Error short batch syncing, failed to validate blocks {height}-{end_height}")
+                        if state_change_summary is not None:
+                            try:
+                                peak_fb: Optional[FullBlock] = await self.blockchain.get_full_peak()
+                                assert peak_fb is not None
+                                ppp_result: PeakPostProcessingResult = await self.peak_post_processing(
+                                    peak_fb,
+                                    state_change_summary,
+                                    peer,
+                                )
+                                await self.peak_post_processing_2(peak_fb, peer, state_change_summary, ppp_result)
+                            except Exception:
+                                # Still do post processing after cancel (or exception)
+                                peak_fb = await self.blockchain.get_full_peak()
+                                assert peak_fb is not None
+                                await self.peak_post_processing(peak_fb, state_change_summary, peer)
+                                raise
+                            finally:
+                                self.log.info(f"Added blocks {height}-{end_height}")
         except (asyncio.CancelledError, Exception):
             self.sync_store.batch_syncing.remove(peer.peer_node_id)
             raise
@@ -787,6 +787,9 @@ class FullNode:
             if curr.sub_epoch_summary_included or curr.height == 0:
                 passed_ses_height_but_not_yet_included = False
 
+            difficulty_coefficient = await self.blockchain.get_farmer_difficulty_coefficient(
+                peak.farmer_pk_ph, peak.height - 1 if peak.height > 0 else 0
+            )
             timelord_new_peak: timelord_protocol.NewPeakTimelord = timelord_protocol.NewPeakTimelord(
                 peak_block.reward_chain_block,
                 difficulty,
@@ -796,6 +799,7 @@ class FullNode:
                 recent_rc,
                 last_csb_or_eos,
                 passed_ses_height_but_not_yet_included,
+                str(difficulty_coefficient),
             )
 
             msg = make_msg(ProtocolMessageTypes.new_peak_timelord, timelord_new_peak)
@@ -818,7 +822,7 @@ class FullNode:
         if (
             curr is None
             or curr.timestamp is None
-            or curr.timestamp < uint64(int(now - 60 * 7))
+            or curr.timestamp < uint64(int(now - 60 * 30))
             or self.sync_store.get_sync_mode()
         ):
             return False
@@ -1881,7 +1885,7 @@ class FullNode:
 
         async with self._blockchain_lock_high_priority:
             start_header_time = time.time()
-            _, header_error = await self.blockchain.validate_unfinished_block_header(block)
+            _, _, header_error = await self.blockchain.validate_unfinished_block_header(block)
             if header_error is not None:
                 raise ConsensusError(header_error)
             self.log.warning(f"Time for header validate: {time.time() - start_header_time}")
@@ -2002,10 +2006,12 @@ class FullNode:
             block.foliage,
             ses,
             rc_prev,
+            validate_result.difficulty_coefficient,
         )
 
         timelord_msg = make_msg(ProtocolMessageTypes.new_unfinished_block_timelord, timelord_request)
         await self.server.send_to_all([timelord_msg], NodeType.TIMELORD)
+        self.log.debug("send timelord request NewUnfinishedBlockTimelord end")
 
         full_node_request = full_node_protocol.NewUnfinishedBlock(block.reward_chain_block.get_hash())
         msg = make_msg(ProtocolMessageTypes.new_unfinished_block, full_node_request)

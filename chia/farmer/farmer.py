@@ -12,6 +12,7 @@ import aiohttp
 from blspy import AugSchemeMPL, G1Element, G2Element, PrivateKey
 
 import chia.server.ws_connection as ws  # lgtm [py/import-and-import-from]
+from chia.consensus.coinbase import create_puzzlehash_for_pk
 from chia.consensus.constants import ConsensusConstants
 from chia.daemon.keychain_proxy import KeychainProxy, connect_to_keychain_and_validate, wrap_local_keychain
 from chia.plot_sync.delta import Delta
@@ -554,6 +555,9 @@ class Farmer:
 
     def get_public_keys(self):
         return [child_sk.get_g1() for child_sk in self._private_keys]
+
+    def get_public_key_puzzle_hashes(self):
+        return [create_puzzlehash_for_pk(master_sk_to_farmer_sk(sk).get_g1()) for sk in self.all_root_sks]
 
     def get_private_keys(self):
         return self._private_keys

@@ -1,5 +1,7 @@
 from typing import Dict, List, Optional, Tuple, Any
 
+from blspy import G1Element
+
 from chia.consensus.block_record import BlockRecord
 from chia.full_node.signage_point import SignagePoint
 from chia.rpc.rpc_client import RpcClient
@@ -267,4 +269,11 @@ class FullNodeRpcClient(RpcClient):
         cost: Optional[int],
     ) -> Dict[str, Any]:
         response = await self.fetch("get_fee_estimate", {"cost": cost, "target_times": target_times})
+        return response
+
+    async def get_staking_info(
+        self,
+        farmer_pk_ph: bytes32,
+    ) -> Dict[str, Any]:
+        response = await self.fetch("get_staking_info", {"farmer_pk_ph": farmer_pk_ph.hex()})
         return response

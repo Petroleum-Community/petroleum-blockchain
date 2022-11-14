@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional
 from clvm.casts import int_from_bytes
 
 from chia.consensus.block_record import BlockRecord
+from chia.consensus.coinbase import create_puzzlehash_for_pk
 from chia.consensus.cost_calculator import NPCResult
 from chia.consensus.pos_quality import UI_ACTUAL_SPACE_CONSTANT_FACTOR
 from chia.full_node.fee_estimator_interface import FeeEstimatorInterface
@@ -24,7 +25,7 @@ from chia.types.mempool_inclusion_status import MempoolInclusionStatus
 from chia.types.spend_bundle import SpendBundle
 from chia.types.unfinished_header_block import UnfinishedHeaderBlock
 from chia.util.byte_types import hexstr_to_bytes
-from chia.util.ints import uint32, uint64, uint128
+from chia.util.ints import uint32, uint64
 from chia.util.log_exceptions import log_exceptions
 from chia.util.ws_message import WsRpcMessage, create_payload_dict
 from chia.wallet.puzzles.decompress_block_spends import DECOMPRESS_BLOCK_SPENDS
@@ -170,17 +171,7 @@ class FullNodeRpcApi:
         else:
             sync_progress_height = uint32(0)
 
-        if peak is not None and peak.height > 1:
-            newer_block_hex = peak.header_hash.hex()
-            # Average over the last day
-            header_hash = self.service.blockchain.height_to_hash(uint32(max(1, peak.height - 4608)))
-            assert header_hash is not None
-            older_block_hex = header_hash.hex()
-            space = await self.get_network_space(
-                {"newer_block_header_hash": newer_block_hex, "older_block_header_hash": older_block_hex}
-            )
-        else:
-            space = {"space": uint128(0)}
+        space = await self.service.blockchain.get_peak_network_space(4608, peak)
 
         if self.service.mempool_manager is not None:
             mempool_size = len(self.service.mempool_manager.mempool.spends)
@@ -213,7 +204,7 @@ class FullNodeRpcApi:
                 },
                 "difficulty": difficulty,
                 "sub_slot_iters": sub_slot_iters,
-                "space": space["space"],
+                "space": space,
                 "mempool_size": mempool_size,
                 "mempool_cost": mempool_cost,
                 "mempool_min_fees": {
@@ -508,33 +499,10 @@ class FullNodeRpcApi:
 
         if newer_block_hex == older_block_hex:
             raise ValueError("New and old must not be the same")
-
-        newer_block_bytes = bytes32.from_hexstr(newer_block_hex)
-        older_block_bytes = bytes32.from_hexstr(older_block_hex)
-
-        newer_block = await self.service.block_store.get_block_record(newer_block_bytes)
-        if newer_block is None:
-            # It's possible that the peak block has not yet been committed to the DB, so as a fallback, check memory
-            try:
-                newer_block = self.service.blockchain.block_record(newer_block_bytes)
-            except KeyError:
-                raise ValueError(f"Newer block {newer_block_hex} not found")
-        older_block = await self.service.block_store.get_block_record(older_block_bytes)
-        if older_block is None:
-            raise ValueError(f"Older block {older_block_hex} not found")
-        delta_weight = newer_block.weight - older_block.weight
-
-        delta_iters = newer_block.total_iters - older_block.total_iters
-        weight_div_iters = delta_weight / delta_iters
-        additional_difficulty_constant = self.service.constants.DIFFICULTY_CONSTANT_FACTOR
-        eligible_plots_filter_multiplier = 2**self.service.constants.NUMBER_ZERO_BITS_PLOT_FILTER
-        network_space_bytes_estimate = (
-            UI_ACTUAL_SPACE_CONSTANT_FACTOR
-            * weight_div_iters
-            * additional_difficulty_constant
-            * eligible_plots_filter_multiplier
+        space = await self.service.blockchain.get_network_space(
+            bytes32.from_hexstr(newer_block_hex), bytes32.from_hexstr(older_block_hex)
         )
-        return {"space": uint128(int(network_space_bytes_estimate))}
+        return {"space": space}
 
     async def get_coin_records_by_puzzle_hash(self, request: Dict) -> EndpointResult:
         """

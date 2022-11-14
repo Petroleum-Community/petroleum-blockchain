@@ -43,6 +43,7 @@ def _convert_plot_info_list(plot_infos: List[PlotInfo]) -> List[Plot]:
                 plot_public_key=plot_info.plot_public_key,
                 file_size=uint64(plot_info.file_size),
                 time_modified=uint64(int(plot_info.time_modified)),
+                farmer_pk_ph=plot_info.farmer_pk_ph,
             )
         )
     return converted

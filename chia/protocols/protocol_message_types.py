@@ -112,3 +112,7 @@ class ProtocolMessageTypes(Enum):
     respond_block_headers = 88
     request_fee_estimates = 89
     respond_fee_estimates = 90
+
+    # Stakings
+    request_stakings = 100
+    respond_stakings = 101

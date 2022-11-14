@@ -10,6 +10,7 @@ import random
 import time
 import traceback
 from concurrent.futures import ProcessPoolExecutor
+from decimal import Decimal
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 from chiavdf import create_discriminant, prove
@@ -236,6 +237,7 @@ class Timelord:
                 rc_block,
                 sub_slot_iters,
                 difficulty,
+                Decimal(block.difficulty_coefficient),
             )
         except Exception as e:
             log.warning(f"Received invalid unfinished block: {e}.")
@@ -538,6 +540,7 @@ class Timelord:
                             unfinished_block.reward_chain_block,
                             self.last_state.get_sub_slot_iters(),
                             self.last_state.get_difficulty(),
+                            Decimal(unfinished_block.difficulty_coefficient),
                         )
                     except Exception as e:
                         log.error(f"Error {e}")
@@ -700,6 +703,7 @@ class Timelord:
                         self.last_state.reward_challenge_cache,
                         uint128(last_csb_or_eos),
                         passed_ses_height_but_not_yet_included,
+                        block.difficulty_coefficient,
                     )
 
                     await self._handle_new_peak()

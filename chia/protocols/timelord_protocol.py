@@ -31,6 +31,7 @@ class NewPeakTimelord(Streamable):
     previous_reward_challenges: List[Tuple[bytes32, uint128]]
     last_challenge_sb_or_eos_total_iters: uint128
     passes_ses_height_but_not_yet_included: bool
+    difficulty_coefficient: str
 
 
 @streamable
@@ -44,6 +45,7 @@ class NewUnfinishedBlockTimelord(Streamable):
     # This is the last thing infused in the reward chain before this signage point.
     # The challenge that the SP reward chain VDF is based off of, or in the case of sp index 0, the previous infusion
     rc_prev: bytes32
+    difficulty_coefficient: str
 
 
 @streamable

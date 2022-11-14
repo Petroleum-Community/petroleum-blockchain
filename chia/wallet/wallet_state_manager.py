@@ -12,7 +12,7 @@ from typing import Any, Callable, Dict, Iterator, List, Optional, Set, Tuple
 from blspy import G1Element, PrivateKey
 
 from chia.consensus.block_rewards import calculate_base_farmer_reward, calculate_pool_reward
-from chia.consensus.coinbase import farmer_parent_id, pool_parent_id
+from chia.consensus.coinbase import farmer_parent_id, pool_parent_id, create_puzzlehash_for_pk
 from chia.consensus.constants import ConsensusConstants
 from chia.data_layer.data_layer_wallet import DataLayerWallet
 from chia.data_layer.dl_wallet_store import DataLayerStore
@@ -47,7 +47,7 @@ from chia.wallet.derive_keys import (
     master_sk_to_wallet_sk_intermediate,
     _derive_path,
     master_sk_to_wallet_sk_unhardened_intermediate,
-    _derive_path_unhardened,
+    _derive_path_unhardened, master_sk_to_farmer_sk,
 )
 from chia.wallet.wallet_protocol import WalletProtocol
 from chia.wallet.did_wallet.did_wallet import DIDWallet
@@ -256,7 +256,11 @@ class WalletStateManager:
     async def get_keys(self, puzzle_hash: bytes32) -> Optional[Tuple[G1Element, PrivateKey]]:
         record = await self.puzzle_store.record_for_puzzle_hash(puzzle_hash)
         if record is None:
-            raise ValueError(f"No key for this puzzlehash {puzzle_hash})")
+            private = master_sk_to_farmer_sk(self.private_key)
+            pubkey = private.get_g1()
+            if create_puzzlehash_for_pk(pubkey) == puzzle_hash:
+                return pubkey, private
+            raise ValueError(f"No key for this farmer_pk_ph {puzzle_hash.hex()})")
         if record.hardened:
             private = master_sk_to_wallet_sk(self.private_key, record.index)
             pubkey = private.get_g1()

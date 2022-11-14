@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Tuple, List
 
-from blspy import G2Element
+from blspy import G2Element, G1Element
 
 from chia.types.blockchain_format.pool_target import PoolTarget
 from chia.types.blockchain_format.proof_of_space import ProofOfSpace
@@ -68,3 +68,19 @@ class SignedValues(Streamable):
     quality_string: bytes32
     foliage_block_data_signature: G2Element
     foliage_transaction_block_signature: G2Element
+
+
+@streamable
+@dataclass(frozen=True)
+class FarmerStakings(Streamable):
+    stakings: List[Tuple[bytes32, str]]
+
+
+@streamable
+@dataclass(frozen=True)
+class RequestStakings(Streamable):
+    puzzle_hashes: List[bytes32]
+    # None means current peak
+    height: Optional[uint32]
+    # wallet can calculate this on itself
+    blocks: Optional[uint64]

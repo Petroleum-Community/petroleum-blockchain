@@ -580,3 +580,19 @@ class CoinStore:
                 raise ValueError(
                     f"Invalid operation to set spent, total updates {rows_updated} expected {len(coin_names)}"
                 )
+
+    async def get_unspent_coins_before_height(self, puzzle_hash: bytes, height: uint32) -> List[CoinRecord]:
+        if height < 2:
+            return []
+        async with self.db_wrapper.reader_no_transaction() as conn:
+            async with conn.execute(
+                "SELECT confirmed_index, spent_index, coinbase, puzzle_hash, "
+                "coin_parent, amount, timestamp FROM coin_record INDEXED BY coin_puzzle_hash WHERE puzzle_hash=? "
+                "AND confirmed_index<? "
+                "AND (spent_index=0 OR spent_index>=?) ",
+                (self.maybe_to_hex(puzzle_hash), height, height),
+            ) as cursor:
+                coins = []
+                for row in await cursor.fetchall():
+                    coins.append(CoinRecord(self.row_to_coin(row), row[0], row[1], row[2], row[6]))
+                return coins

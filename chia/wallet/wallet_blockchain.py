@@ -1,5 +1,9 @@
 import logging
+from decimal import Decimal
 from typing import Dict, Optional, Tuple, List
+
+from blspy import G1Element
+
 from chia.consensus.block_header_validation import validate_finished_header_block
 from chia.consensus.block_record import BlockRecord
 from chia.consensus.blockchain import ReceiveBlockResult
@@ -98,8 +102,8 @@ class WalletBlockchain(BlockchainInterface):
             difficulty = self._difficulty
 
         # Validation requires a block cache (self) that goes back to a subepoch barrier
-        required_iters, error = validate_finished_header_block(
-            self.constants, self, block, False, difficulty, sub_slot_iters, False
+        required_iters, _, error = validate_finished_header_block(
+            self.constants, self, block, False, difficulty, sub_slot_iters, 0.5, False
         )
         if error is not None:
             return ReceiveBlockResult.INVALID_BLOCK, error.code

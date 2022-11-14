@@ -126,7 +126,8 @@ def skip_proof_of_space(buf: memoryview) -> memoryview:
     buf = skip_optional(buf, skip_bytes32)  # pool_contract_puzzle_hash
     buf = skip_g1_element(buf)  # plot_public_key
     buf = skip_uint8(buf)  # size
-    return skip_bytes(buf)  # proof
+    buf = skip_bytes(buf)  # proof
+    return skip_bytes32(buf)
 
 
 def skip_reward_chain_block(buf: memoryview) -> memoryview:
