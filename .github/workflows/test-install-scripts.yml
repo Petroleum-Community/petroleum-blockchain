@@ -1,16 +1,17 @@
 name: 🏗️ Test Install Scripts
 
 on:
-  push:
-    branches:
-      - 'long_lived/**'
-      - main
-      - 'release/**'
-  release:
-    types: [published]
-  pull_request:
-    branches:
-      - '**'
+  workflow_dispatch:
+  # push:
+  #   branches:
+  #     - 'long_lived/**'
+  #     - main
+  #     - 'release/**'
+  # release:
+  #   types: [published]
+  # pull_request:
+  #   branches:
+  #     - '**'
 
 concurrency:
   # SHA is added to the end if on `main` to let all main workflows run
@@ -35,7 +36,7 @@ jobs:
         fetch-depth: 0
 
     - name: Setup Python environment
-      uses: Chia-Network/actions/setup-python@main
+      uses: actions/setup-python@v3
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -157,8 +158,7 @@ jobs:
     - name: Prepare Arch
       if: ${{ matrix.distribution.type == 'arch' }}
       run: |
-        pacman --noconfirm -Syu
-        pacman --noconfirm -S base git sudo openssl-1.1
+        pacman --noconfirm --refresh base --sync git sudo
         # The behavior we follow in install.sh is unique with Arch in that
         # we leave it to the user to install the appropriate version of python,
         # so we need to install python here in order for the test to succeed.

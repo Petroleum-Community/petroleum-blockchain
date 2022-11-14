@@ -2,16 +2,16 @@ name: 📦🚀 Build Installer - Windows 10
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - 'long_lived/**'
-      - main
-      - 'release/**'
-  release:
-    types: [published]
-  pull_request:
-    branches:
-      - '**'
+  # push:
+  #   branches:
+  #     - 'long_lived/**'
+  #     - main
+  #     - 'release/**'
+  # release:
+  #   types: [published]
+  # pull_request:
+  #   branches:
+  #     - '**'
 
 concurrency:
   # SHA is added to the end if on `main` to let all main workflows run
@@ -80,7 +80,7 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-pip-
 
-    - uses: Chia-Network/actions/setup-python@main
+    - uses: actions/setup-python@v3
       name: Install Python ${{ matrix.python-version }}
       with:
         python-version: ${{ matrix.python-version }}
