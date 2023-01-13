@@ -1,6 +1,6 @@
 [submodule "chia-blockchain-gui"]
 	path = chia-blockchain-gui
-	url = https://github.com/Silicoin-Community/silicoin-blockchain-gui
+	url = https://github.com/Petroleum-Community/petroleum-blockchain-gui
 	branch = main
 [submodule "mozilla-ca"]
 	path = mozilla-ca
